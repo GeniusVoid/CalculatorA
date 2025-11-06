@@ -1,0 +1,15 @@
+<resources>
+    <style name="CalcBtn.Base" parent="Widget.Material3.Button">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:layout_rowWeight">1</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="CalcBtn.Num" parent="CalcBtn.Base"/>
+    <style name="CalcBtn.Oper" parent="CalcBtn.Base"/>
+    <style name="CalcBtn.Eq" parent="CalcBtn.Base"/>
+</resources>
