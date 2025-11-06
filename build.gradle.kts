@@ -1,6 +1,4 @@
-// Minimal root build.gradle.kts — repositories must be defined in settings.gradle.kts
-// Keeps only a clean task to avoid repository mutation errors.
-
+// Minimal root build file — no repositories here (settings.gradle handles repos)
 import org.gradle.api.tasks.Delete
 
 tasks.register("clean", Delete::class) {
