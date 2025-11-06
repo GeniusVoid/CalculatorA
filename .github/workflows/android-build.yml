@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (diagnostic)
 
 on:
   push:
@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,18 +20,61 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build (use gradlew if present, otherwise install gradle)
+      - name: Print environment (diagnostic)
         run: |
+          echo "WORKDIR: $(pwd)"
+          echo "LIST ROOT:"
+          ls -la
+          echo "LIST PROJECT ROOT:"
+          ls -la .
+          echo "Show top-level files:"
+          find . -maxdepth 2 -type f -print
+
+      - name: Java and OS versions
+        run: |
+          java -version || true
+          uname -a
+          free -m || true
+
+      - name: Ensure Android cmdline tools and SDK (sdkmanager)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          mkdir -p $HOME/cmdline-tools
+          cd $HOME/cmdline-tools
+          if [ ! -d "$HOME/cmdline-tools/latest" ]; then
+            wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline.zip
+            unzip -q cmdline.zip -d tmp
+            mkdir -p $HOME/cmdline-tools/latest
+            mv tmp/cmdline-tools/* $HOME/cmdline-tools/latest/ || true
+          fi
+          export PATH=$HOME/cmdline-tools/latest/bin:$PATH
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
+        shell: bash
+
+      - name: Show Gradle/Wrapper presence
+        run: |
+          echo "Does gradlew exist?"
+          if [ -f ./gradlew ]; then echo "gradlew found"; ls -la ./gradlew; ./gradlew --version || true; fi
+          echo "System gradle:"
+          gradle --version || true
+        shell: bash
+
+      - name: Build (use gradlew if present, otherwise system gradle)
+        run: |
+          set -x
+          # make gradle less memory-hungry if runner memory is an issue
+          export ORG_GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx1024m"
           if [ -f ./gradlew ]; then
             chmod +x ./gradlew
-            ./gradlew assembleDebug --stacktrace
+            ./gradlew assembleDebug --stacktrace --no-daemon
           else
-            sudo apt-get update
-            sudo apt-get install -y gradle
             gradle assembleDebug --stacktrace
           fi
+        shell: bash
 
-      - name: Upload APK artifact
+      - name: Upload APK artifact (if produced)
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
